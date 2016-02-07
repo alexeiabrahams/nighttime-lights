@@ -3,17 +3,17 @@ clc
 tic
 %%%%%%%%%%%%%%%%%%%%%%%%
 %PARAMETERS:
-input_image_pathname = 'E:\nighttime_lights\F152000_topcoded_addis_ababa.tif';%avg_vis image
-input_image_perc_pathname = 'E:\nighttime_lights\F152000_topcoded_addis_ababa.tif';%frequency image
-output_image_pathname = 'E:\nighttime_lights\F152000_topcoded_addis_ababa_DEBLURRED.tif';%name of the file to be produced by this script
-pixel_width = .915;%user should measure the width of a pixel in the image (kilometers)
-pixel_length = .921;%user should measure the length of a pixel in the image (kilometers)
-uniform_cutoff=4;%user should set this based on inspection of image -- what seems to be the typical 'background' pixel value?
+input_image_pathname = 'C:\nighttime_lights_folder\topcoded_addis_ababa_f152000.tif';%avg_vis image
+input_image_perc_pathname = 'C:\nighttime_lights_folder\frequency_image_addis_ababa_f152000.tif';%frequency image
+output_image_pathname = 'C:\nighttime_lights_folder\deblurred_addis_ababa_f152000.tif';%name of the file to be produced by this script
+pixel_width = .867;%user should measure the width of a pixel in the image (kilometers)
+pixel_length = .925;%user should measure the length of a pixel in the image (kilometers)
 satellite='F15';%user should set this
 year='2000';%user should set this
-divide_input_image_perc_by = 1.0;%default value: 1.0. this is to make sure your frequency image is scaled between 0 and 100.
-sigma_x2 = 1.65^2;%default value: 1.65^2
-sigma_y2 = 1.65^2;%default value: 1.65^2
+divide_input_image_perc_by = 1.0;%default value: 1.0. Adjust this to make sure your frequency image is scaled between 0 and 100.
+yes_calibrate=1;%if set to 1, the script will intertemporally calibrate your image using parameters from Wu et al (2012) (for topcoded images) or Hsu et al (2015) (for radiance-calibrated images)
+sigma_x2 = 2.5^2;%default value: 2.5^2
+sigma_y2 = 2.5^2;%default value: 2.5^2
 radiance_calibrated=0; %set to 1 if you are using radiance-calibrated imagery, 0 otherwise.
 %%NOTHING BELOW THIS LINE NEEDS TO BE CHANGED BY THE USER :-)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -25,6 +25,7 @@ radiance_calibrated=0; %set to 1 if you are using radiance-calibrated imagery, 0
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 [input_image, input_georeference] = geotiffread(input_image_pathname);
+uniform_cutoff=double(min(min(input_image))+1.0);%user should set this based on inspection of image -- what seems to be the typical 'background' pixel value?
 input_image_perc = imread(input_image_perc_pathname);
 input_image_perc = double(input_image_perc)/divide_input_image_perc_by;
 num_rows = size(input_image,1);
@@ -95,7 +96,6 @@ sigma_y2 = sigma_y2/(pixel_length^2); %converts sigma_y2 from units of km to uni
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %INTERCALIBRATE IMAGERY USING WU ET AL 2012 FOR NON-RADIANCE-CALIBRATED (TOPCODED) IMAGERY, OR HSU ET AL (2015) FOR RADIANCE-CALIBRATED IMAGERY:
-yes_calibrate=1;
 if yes_calibrate==1
 if radiance_calibrated==0
     for i = 1:31
@@ -112,8 +112,10 @@ end
 if radiance_calibrated==1
     for i=1:8
         if strcmp(noaa_radcal_intercalibrate(i, 2), satellite)==1 & strcmp(noaa_radcal_intercalibrate(i, 3), year)==1
-            b = noaa_radcal_intercalibrate(i, 4);
             a = noaa_radcal_intercalibrate(i, 5);
+            b = noaa_radcal_intercalibrate(i, 4);
+            a = str2num(a{1});
+            b = str2num(b{1});
             input_image = a + b*double(input_image);
             uniform_cutoff = a + b*uniform_cutoff;
         end
