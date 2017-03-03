@@ -1,2 +1,14 @@
-# nighttime-lights
-Scripts for handling nighttime lights imagery
+This repository contains Matlab scripts for deblurring DMSP annual composite nighttime lights imagery. The underlying methodology applied by these scripts is described in the working paper, "Deblurring DMSP Nighttime Lights", available to read at https://sites.google.com/site/alexeiabrahams/
+
+Users are kindly requested to cite the paper "Deblurring DMSP Nighttime Lights" in the manner recommended in the repository's LICENSE file (special thanks to Bruno Sánchez-Andrade Nuño for committing this MIT license on our behalf).
+
+Users should download two scripts: the 'calling' script (deblur_roving_window_call_script.m) and an auxiliary script that handles the details of deblurring (block_deblur.m). Save both of these scripts to the same working directory. Open the calling script in Matlab. The script was coded in Matlab R2016b, though it will likely work for versions dating back to at least 2013. The user should specify an output folder, and pathnames for the blurred image (avg_vis) and blurred image frequency-of-illumination raster (pct).
+
+Topcoded avg_vis images and their corresponding pct images are available for download at https://ngdc.noaa.gov/eog/dmsp/downloadV4composites.html
+Radiance-calibrated images are available for download at https://ngdc.noaa.gov/eog/dmsp/download_radcal.html Since the National Oceanic and Atmospheric Administration (NOAA) does not pair the avg_vis radiance-calibrated images with corresponding pct images, the user should apply the most contemporaneous pct image from the topcoded series.
+
+The user can 'clip' these global annual composite images if she only wishes to deblur a specific area of the globe (Addis Ababa and its surrounding countryside, Latin America, etc.). This approach is strongly recommended to reduce computation time.
+
+In the calling script, if the parameter whole_image is set to zero, Matlab will attempt to deblur the blurred input avg_vis image by chopping up the input image into 60 pixel x 60 pixel windows, deblurring each window separately, saving the result only for the middle 10 x 10 pixel block, and then recomposing the deblurred image at the end from all the 10 x 10 solutions in memory. Since each 60 x 60 window can be deblurred independently of each other, the script is set up to take advantage of parallel processing. The number of workers can be specified with the parameter num_cpus. For smaller regions (a city and its immediate surroundings), we recommend setting whole_image=1, in which case the entire image will be deblurred on one CPU.
+
+For any avg_vis input image, deblurring results are typically erroneous towards the edges of the image due to censoring. Users are advised to choose input images that generously encompass the area of interest. For example, if we wish to deblur the lights of Addis Ababa, we clip the global avg_vis with a rectangle encompassing not only Addis Ababa but 30-40 columns and rows of pixels on every side of Addis.
