@@ -10,11 +10,11 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
-The research article to which this MATLAB script relates is accessible at my personal website: https://sites.google.com/site/alexeiabrahams2/
+The research article to which this MATLAB script relates is accessible at my personal website: https://sites.google.com/site/alexeiabrahams/
 
 Be sure to cite the paper as follows:
 
-Abrahams, A. and Lozano-Gracia, N. and Oram, C. J. 2016. "Deblurring nighttime lights". Working paper.
+Abrahams, A. and Lozano-Gracia, N. and Oram, C. J. 2017. "Deblurring DMSP nighttime lights". Working paper.
 
 The BibTex citation is as follows:
 
