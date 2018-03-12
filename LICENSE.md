@@ -14,17 +14,17 @@ The research article to which this MATLAB script relates is accessible at my per
 
 Be sure to cite the paper as follows:
 
-Abrahams, A. and Lozano-Gracia, N. and Oram, C. J. 2017. "Deblurring DMSP nighttime lights". Working paper.
+Abrahams, A. and Lozano-Gracia, N. and Oram, C. J. 2018. "Deblurring DMSP nighttime lights: A new method using Gaussian filters and Frequencies of illumination". Forthcoming, Remote Sensing of Environment.
 
 The BibTex citation is as follows:
 
 @article
-{alo2016,
+{alo2018,
 author={Abrahams, A. and Lozano-Gracia, N. and Oram, C. J.},
-title={Deblurring nighttime lights},
-journal={Working paper},
+title={Deblurring DMSP nighttime lights: A new method using Gaussian filters and Frequencies of illumination},
+journal={Remote Sensing of Environment},
 volume={},
-year=2016,
+year=2018,
 pages={}
 }
 
