@@ -4,10 +4,11 @@ clc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %PARAMETERS:
 output_folder = strcat('/root/latlab'); %change to appropriate working directory
-num_cpus = 20 %set number of CPUs for parallel processing
-whole_image=0; %deblur whole image on one CPU with whole_image=1. deblur image using multiple CPUs in parallel with whole_image=0; note that the borders of the image may not be blurred depending on window size
+num_cpus = 2; %set number of CPUs for parallel processing
+whole_image=1; %deblur whole image on one CPU with whole_image=1. deblur image using multiple CPUs in parallel with whole_image=0; note that the borders of the image may not be blurred depending on window size
 freq_filter = 1;%default value: 1. this variable decides if frequency filtering should occur. set to zero if undesired.
 threshold=20.0;%minimum percentage of cloud-free nights permissible; all pixels with lower frequency are set to zero
+use_default_noise_sig_ratio = 1; %set to 1 to use default noise-to-signal ratio for deconvolution (see block_deblur.m); set to zero to calculate ratio locally (not recommended for parallelized roving window deblurring)
 
 blurred_image_pathname = strcat(output_folder, '/', 'blurred_image.tif') %avg_vis image
 blurred_image_perc_pathname = strcat(output_folder, '/', 'pct_raster_for_blurred_image.tif') %pct image
@@ -86,7 +87,7 @@ if whole_image==0
 
         block = blurred_image(top_row:bottom_row, left_col:right_col);
         perc_block = blurred_image_perc(top_row:bottom_row, left_col:right_col);
-        deblurred_block = block_deblur(block, perc_block, pixel_length, pixel_width); %deblur the block
+        deblurred_block = block_deblur(block, perc_block, pixel_length, pixel_width, use_default_noise_sig_ratio); %deblur the block
         trust_deblurred_block = deblurred_block(window_size/2 - step_size/2 + 1:window_size/2 + step_size/2, window_size/2 - step_size/2 + 1:window_size/2 + step_size/2);
         deblurred_images(cell_num, :, :) = trust_deblurred_block;
     end
@@ -107,7 +108,7 @@ else
     pixel_width = EW_in_degrees*111.41513*cos(avg_latitude*pi/180.0);
     block = blurred_image;
     perc_block = blurred_image_perc;
-    deblurred_block = block_deblur(block, perc_block, pixel_length, pixel_width); %deblur the block
+    deblurred_block = block_deblur(block, perc_block, pixel_length, pixel_width, use_default_noise_sig_ratio); %deblur the block
     deblurred_image = (1.0/rescale_factor)*deblurred_block;
 end
 geotiffwrite(deblurred_image_pathname,deblurred_image,input_georeference);
