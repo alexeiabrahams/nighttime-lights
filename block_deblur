@@ -1,12 +1,10 @@
-function result = block_deblur(block, perc_block, pixel_length, pixel_width)
+function result = block_deblur(block, perc_block, pixel_length, pixel_width, use_default_noise_sig_ratio)
     freq_filter = 1;
     threshold=20.0;
+    default_noise_sig_ratio = 0.011;
     
     blurred_image = block;
     blurred_image_perc = perc_block;
-
-    num_rows = size(blurred_image,1);
-    num_cols = size(blurred_image',1);
     
     %set negative values (if there are any) to zero:
     blurred_image(blurred_image<0.0) = 0.0;
@@ -18,8 +16,32 @@ function result = block_deblur(block, perc_block, pixel_length, pixel_width)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    normalizers = [];
+    %ESTIMATE NOISE-SIGNAL RATIO: (assumes image is >10 rows and >10 columns)
+    num_rows = size(blurred_image,1);
+    num_cols = size(blurred_image',1);
+
+    double_blurred_image = im2double(blurred_image);
+    double_interior_blurred_image = double_blurred_image(5:num_rows-5, 5:num_cols-5);
+    var_interior = var(double_interior_blurred_image(:));
+
+    %calculate variance of periperhy:
+    top_five_rows = double_blurred_image(1:5, :);
+    bottom_five_rows = double_blurred_image(num_rows-4:num_rows, :);
+    five_left_columns = double_blurred_image(6:num_rows-5, 1:5);
+    five_right_columns = double_blurred_image(6:num_rows-5, num_cols-4:num_cols);
+    vector_of_exterior_pixels = [top_five_rows(:); bottom_five_rows(:); five_left_columns(:); five_right_columns(:)];
+    var_periphery = var(vector_of_exterior_pixels);
+
+    noise_sig_ratio = var_periphery/var_interior;
+    if use_default_noise_sig_ratio==1
+        noise_sig_ratio = default_noise_sig_ratio;
+    end
+    %signal_var = var(Gaussian_PSF(:));
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     sigmas = [1.0:.1:4.0];
+    normalizers = [];
     for sigma = sigmas
     %disp('now deblurring using this sigma:')
     %sigma
@@ -45,9 +67,8 @@ function result = block_deblur(block, perc_block, pixel_length, pixel_width)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %DEBLUR IMAGE:
-    signal_var = var(Gaussian_PSF(:));
-    noise_var = .001*signal_var;
-    deblurred_image = deconvwnr(blurred_image, Gaussian_PSF, noise_var/signal_var);
+    %signal_var = var(Gaussian_PSF(:));
+    deblurred_image = deconvwnr(blurred_image, Gaussian_PSF, noise_sig_ratio);
     if sum(sum(deblurred_image(deblurred_image<0)))<0
         disp('neg vals after deconvwnr')
         sum(sum(deblurred_image(deblurred_image<0)))
@@ -145,7 +166,6 @@ function result = block_deblur(block, perc_block, pixel_length, pixel_width)
     normalizers = [normalizers normalizer];
     end
     
-    
     %APPLY FREQUENCY THRESHOLD: (DEFAULT: sources lit <20% of cloud-free nights should be switched off)
     lit_often = blurred_image_perc;
     lit_often(blurred_image_perc<threshold) = 0;
@@ -153,9 +173,15 @@ function result = block_deblur(block, perc_block, pixel_length, pixel_width)
     deblurred_image = double(deblurred_image) .* double(lit_often);
     end
 
+    %calculate best sigma for this noise-signal ratio:
     index_of_best_sigma = find(normalizers==min(normalizers));
     index_of_best_sigma = index_of_best_sigma(1);
     best_sigma = sigmas(index_of_best_sigma);
+    
+    %store best sigma and its normalizer for outer loop:
+    disp('results from looping thru sigmas:')
+    noise_sig_ratio
+    best_sigma
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -184,6 +210,7 @@ function result = block_deblur(block, perc_block, pixel_length, pixel_width)
     %THE RESULT TO DISK
 
     sigma = best_sigma;
+    
     sigma_x2 = sigma^2;%default value: 2.5^2
     sigma_y2 = sigma^2;%default value: 2.5^2
     sigma_x2 = sigma_x2/(pixel_width^2); %converts sigma_x2 from units of km to units of bins
@@ -206,9 +233,8 @@ function result = block_deblur(block, perc_block, pixel_length, pixel_width)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %DEBLUR IMAGE:
-    signal_var = var(Gaussian_PSF(:));
-    noise_var = .001*signal_var;
-    deblurred_image = deconvwnr(blurred_image, Gaussian_PSF, noise_var/signal_var);
+    %signal_var = var(Gaussian_PSF(:));
+    deblurred_image = deconvwnr(blurred_image, Gaussian_PSF, noise_sig_ratio);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -302,4 +328,6 @@ function result = block_deblur(block, perc_block, pixel_length, pixel_width)
     lit_often(blurred_image_perc>=threshold) = 1;
     deblurred_image = double(deblurred_image) .* double(lit_often);
     
+    noise_sig_ratio
+    best_sigma
     result = deblurred_image;
